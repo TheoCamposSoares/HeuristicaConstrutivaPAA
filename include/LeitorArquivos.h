@@ -1,1 +1,0 @@
-// Estrutura do leitor de arquivos
