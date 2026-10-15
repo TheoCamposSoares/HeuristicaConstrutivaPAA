@@ -5,7 +5,7 @@
 #include <vector>
 
 // Estrutura para filtragem dos dados importantes de cada instancia
-struct Instancia{
+struct Instancia {
     std::string nomeArquivo;
     int num_clientes;
     int num_estacoes;
