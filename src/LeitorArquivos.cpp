@@ -1,109 +1,90 @@
 #include "../include/leitorArquivos.hpp"
 
-#include <cstdio>
-#include <fstream>
 #include <iostream>
-#include <sstream>
+#include <fstream>
 #include <string>
+#include <sstream>
+
+bool extrairParametrosDoNome(const std::string& caminhoArquivo, int& qntClientes, int& qntCaminhoes, int& raio) {
+    int extraidos = std::sscanf(caminhoArquivo.c_str(), "%*[^-]-n%d-k%d-r%d.mtspds", &qntClientes, &qntCaminhoes, &raio);
+    return (extraidos == 3);
+}
+
+bool extrairConteudo(std::ifstream& arquivo, Instancia& instancia, int qntClientes, int raio) {
+    int coordDeposito = 0;
+    int idCliente = 1;
+    int idEstacao = 1;
+
+    std::string linha;
+    char virgula;
+
+    while (std::getline(arquivo, linha)) {
+        if (linha.empty()) continue;
+        
+        char primeiroCarac = linha[0];
+        if (!isdigit(primeiroCarac)) continue;
+
+        std::stringstream ss(linha);
+
+        if (coordDeposito == 0) {
+            ss >> instancia.deposito.posicao.x >> virgula >> instancia.deposito.posicao.y;
+            coordDeposito = 1;
+        } 
+        else if (idCliente <= qntClientes - 1) {
+            Cliente cliente;
+            cliente.entregue = false;
+            cliente.idCliente = idCliente++;
+            
+            ss >> cliente.posicao.x >> virgula >> cliente.posicao.y;
+            instancia.clientes.push_back(cliente);
+        } 
+        else {
+            EstacaoDrone estacao;
+            estacao.ativado = false;
+            estacao.alcance = raio;
+            estacao.idEstacao = idEstacao++;
+            
+            ss >> estacao.posicao.x >> virgula >> estacao.posicao.y;
+            instancia.estacoes.push_back(estacao);
+        }
+    }
+
+    return true;
+}
 
 bool lerInstancia(const std::string& caminhoArquivo, Instancia& instancia) {
     instancia.nomeArquivo = caminhoArquivo;
     instancia.clientes.clear();
     instancia.estacoes.clear();
 
-    const std::size_t separador = caminhoArquivo.find_last_of("/\\");
-    const std::string nomeArquivo = caminhoArquivo.substr(
-        separador == std::string::npos ? 0 : separador + 1);
-    int n = 0;
-    int k = 0;
-    int r = 0;
-    int caracteresLidos = 0;
-    const int extraidos = std::sscanf(
-        nomeArquivo.c_str(),
-        "%*[^-]-n%d-k%d-r%d.mtspds%n",
-        &n,
-        &k,
-        &r,
-        &caracteresLidos);
-
-    if (extraidos != 3 || caracteresLidos != static_cast<int>(nomeArquivo.size())
-        || n < 2 || k <= 0 || r <= 0) {
-        std::cerr << "Erro: nome de arquivo invalido: " << nomeArquivo << '\n';
-        return false;
-    }
-
+    // 1. Abre o arquivo
     std::ifstream arquivo(caminhoArquivo);
     if (!arquivo.is_open()) {
-        std::cerr << "Erro ao abrir o arquivo: " << caminhoArquivo << '\n';
+        std::cerr << "Erro ao abrir o arquivo: " << caminhoArquivo << std::endl;
         return false;
     }
 
-    instancia.num_clientes = n - 1;
-    instancia.num_estacoes = 0;
-    instancia.raio = r;
-    instancia.deposito.qnt_caminhoes = k;
-
-    enum class Secao { nenhuma, deposito, clientes, estacoes };
-    Secao secao = Secao::nenhuma;
-    bool depositoLido = false;
-
-    std::string linha;
-    while (std::getline(arquivo, linha)) {
-        if (linha.find("The Depot") != std::string::npos) {
-            secao = Secao::deposito;
-            continue;
-        }
-        if (linha.find("The Demand Locations") != std::string::npos) {
-            secao = Secao::clientes;
-            continue;
-        }
-        if (linha.find("The Drone Stations") != std::string::npos) {
-            secao = Secao::estacoes;
-            continue;
-        }
-
-        std::stringstream ss(linha);
-        float x = 0.0f;
-        float y = 0.0f;
-        char virgula = '\0';
-        if (!(ss >> x >> virgula >> y) || virgula != ',') {
-            continue;
-        }
-
-        if (secao == Secao::deposito && !depositoLido) {
-            instancia.deposito.posicao.x = x;
-            instancia.deposito.posicao.y = y;
-            depositoLido = true;
-        } else if (secao == Secao::clientes) {
-            if (static_cast<int>(instancia.clientes.size()) >= instancia.num_clientes) {
-                std::cerr << "Erro: quantidade de clientes excede N-1 no arquivo: "
-                          << caminhoArquivo << '\n';
-                return false;
-            }
-            Cliente cliente;
-            cliente.entregue = false;
-            cliente.idCliente = static_cast<int>(instancia.clientes.size()) + 1;
-            cliente.posicao.x = x;
-            cliente.posicao.y = y;
-            instancia.clientes.push_back(cliente);
-        } else if (secao == Secao::estacoes) {
-            EstacaoDrone estacao;
-            estacao.ativado = false;
-            estacao.alcance = r;
-            estacao.idEstacao = static_cast<int>(instancia.estacoes.size()) + 1;
-            estacao.posicao.x = x;
-            estacao.posicao.y = y;
-            instancia.estacoes.push_back(estacao);
-        }
+    // 2. Extrai as informações do nome do arquivo
+    int qntClientes = 0, qntCaminhoes = 0, raio = 0;
+    if (!extrairParametrosDoNome(caminhoArquivo, qntClientes, qntCaminhoes, raio)) {
+        std::cerr << "\nErro: O padrão ou a extensão do nome do arquivo não coincidem!" << std::endl;
+        arquivo.close();
+        return false;
     }
 
-    instancia.num_estacoes = static_cast<int>(instancia.estacoes.size());
-    if (!depositoLido
-        || static_cast<int>(instancia.clientes.size()) != instancia.num_clientes
-        || instancia.estacoes.empty()) {
-        std::cerr << "Erro: estrutura da instancia invalida: " << caminhoArquivo
-                  << " (esperados " << instancia.num_clientes << " clientes; lidos "
-                  << instancia.clientes.size() << ")\n";
+    instancia.deposito.qntCaminhoes = qntCaminhoes;
+    instancia.raio = raio;
+    instancia.numClientes = qntClientes - 1;
+
+    // 3. Processa o conteúdo do arquivo
+    extrairConteudo(arquivo, instancia, qntClientes, raio);
+
+    // 4. Fecha o arquivo
+    arquivo.close();
+
+    // 5. Validação final
+    if (instancia.clientes.empty() || instancia.estacoes.empty()) {
+        std::cerr << "Erro: Não foi possível ler os dados da instância " << caminhoArquivo << std::endl;
         return false;
     }
 
