@@ -23,19 +23,19 @@ struct EstacaoDrone {
 
 struct Deposito {
     Coordenada posicao;
-    int qnt_caminhoes;
+    int qntCaminhoes;
 };
 
 struct RotaCaminhao {
     int id;
-    std::vector<int> sequencia_nos;
-    double tempo_viagem;
+    std::vector<int> sequenciaNos;
+    double tempoViagem;
 };
 
 // Estrutura que armazena a solução completa para o problema
-struct Solução {
-    std::vector<RotaCaminhao> rotas_caminhoes;
-    std::vector<std::pair<int, int>> atendimento_drones; // <idEstacao, idCliente>
+struct Solucaoo {
+    std::vector<RotaCaminhao> rotasCaminhoes;
+    std::vector<std::pair<int, int>> atendimentoDrones; // <idEstacao, idCliente>
     double makespan;
 };
 

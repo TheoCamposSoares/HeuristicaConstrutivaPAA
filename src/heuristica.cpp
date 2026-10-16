@@ -69,7 +69,7 @@ std::vector<std::pair<int, int>> atribuirClientes(const Instancia& instancia,
 
 std::vector<RotaCaminhao> construirRotas(const Instancia& instancia, const std::vector<int>& estacoesSelecionadas,
     const std::vector<std::pair<int, int>>& atribuicoes) {
-    const int numCaminhoes = instancia.deposito.qnt_caminhoes;
+    const int numCaminhoes = instancia.deposito.qntCaminhoes;
 
     if (numCaminhoes <= 0) {
         throw std::invalid_argument("A instancia deve ter ao menos um caminhao.");
@@ -170,9 +170,9 @@ std::vector<RotaCaminhao> construirRotas(const Instancia& instancia, const std::
     for (int i = 0; i < numCaminhoes; ++i) {
         RotaCaminhao rota;
         rota.id = i + 1;
-        rota.tempo_viagem = 0.0;
+        rota.tempoViagem = 0.0;
 
-        rota.sequencia_nos.push_back(0);
+        rota.sequenciaNos.push_back(0);
         Coordenada posAtual = deposito;
         std::vector<int> pendentes = grupos[i];
 
@@ -196,16 +196,16 @@ std::vector<RotaCaminhao> construirRotas(const Instancia& instancia, const std::
             }
 
             int proximoNo = *maisProximo;
-            rota.tempo_viagem += menorDistancia;
-            rota.sequencia_nos.push_back(proximoNo);
+            rota.tempoViagem += menorDistancia;
+            rota.sequenciaNos.push_back(proximoNo);
             posAtual = obterPosicao(proximoNo);
 
             pendentes.erase(maisProximo);
         }
 
         // Retorna ao deposito.
-        rota.tempo_viagem += calcularDistancia(posAtual, deposito);
-        rota.sequencia_nos.push_back(0);
+        rota.tempoViagem += calcularDistancia(posAtual, deposito);
+        rota.sequenciaNos.push_back(0);
 
         rotas.push_back(rota);
     }
