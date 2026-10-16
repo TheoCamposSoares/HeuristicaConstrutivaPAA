@@ -212,3 +212,81 @@ std::vector<RotaCaminhao> construirRotas(const Instancia& instancia, const std::
 
     return rotas;
 }
+
+std::unordered_map<int, double> calcularTempoDrones(const Instancia& instancia,
+    const std::vector<std::pair<int, int>>& atribuicoes, int dronesPorEstacao, double alpha) {
+    if (dronesPorEstacao <= 0 || alpha <= 0.0) {
+        throw std::invalid_argument(
+            "A quantidade de drones e alpha devem ser positivos."
+        );
+    }
+
+    // Guarda os tempos de entrega de cada estacaoo.
+    std::unordered_map<int, std::vector<double>> temposPorEstacao;
+
+    for (const auto& atribuicao : atribuicoes) {
+        int idCliente = atribuicao.first;
+        int idEstacao = atribuicao.second;
+        const Cliente* clienteEncontrado = nullptr;
+        const EstacaoDrone* estacaoEncontrada = nullptr;
+
+        for (const Cliente& cliente : instancia.clientes) {
+            if (cliente.idCliente == idCliente) {
+                clienteEncontrado = &cliente;
+                break;
+            }
+        }
+        for (const EstacaoDrone& estacao : instancia.estacoes) {
+            if (estacao.idEstacao == idEstacao) {
+                estacaoEncontrada = &estacao;
+                break;
+            }
+        }
+
+        if (clienteEncontrado == nullptr || estacaoEncontrada == nullptr) {
+            throw std::invalid_argument(
+                "Cliente ou estacao inexistente em uma atribuicao."
+            );
+        }
+
+        double distancia = calcularDistancia(
+            estacaoEncontrada->posicao,
+            clienteEncontrado->posicao
+        );
+
+        // Ida e volta: a velocidade do caminhão é considerada 1.
+        double tempo = (2.0 * distancia) / alpha;
+
+        temposPorEstacao[idEstacao].push_back(tempo);
+    }
+
+    std::unordered_map<int, double> resultado;
+
+    for (auto& entrada : temposPorEstacao) {
+        int idEstacao = entrada.first;
+        std::vector<double>& tempos = entrada.second;
+
+        // Distribui primeiro as entregas mais demoradas.
+        std::sort(tempos.begin(), tempos.end(), std::greater<double>());
+
+        // Cada posição representa um drone e sua carga de trabalho.
+        std::vector<double> cargaDrones(dronesPorEstacao, 0.0);
+
+        for (double tempo : tempos) {
+            auto droneMenosOcupado = std::min_element(
+                cargaDrones.begin(),
+                cargaDrones.end()
+            );
+
+            *droneMenosOcupado += tempo;
+        }
+
+        // Tempo para concluir todas as entregas daquela estação.
+        resultado[idEstacao] = *std::max_element(
+            cargaDrones.begin(),
+            cargaDrones.end()
+        );
+    }
+
+    return resultado;
+}
