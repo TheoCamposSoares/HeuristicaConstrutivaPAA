@@ -61,7 +61,7 @@ std::vector<std::pair<int, int>> atribuirClientes(const Instancia& instancia,
         }
 
         if (melhorEstacao != -1) {
-            atribuicoes.push_back({cliente.idCliente, melhorEstacao});
+            atribuicoes.push_back({melhorEstacao, cliente.idCliente});
         }
     }
     return atribuicoes;
@@ -81,8 +81,8 @@ std::vector<RotaCaminhao> construirRotas(const Instancia& instancia, const std::
     std::unordered_set<int> estacoesUtilizadas;
 
     for (const auto& atribuicao : atribuicoes) {
-        int idCliente = atribuicao.first;
-        int idEstacao = atribuicao.second;
+        int idEstacao = atribuicao.first;
+        int idCliente = atribuicao.second;
         if (std::find(
                 estacoesSelecionadas.begin(),
                 estacoesSelecionadas.end(),
@@ -225,8 +225,8 @@ std::unordered_map<int, double> calcularTempoDrones(const Instancia& instancia,
     std::unordered_map<int, std::vector<double>> temposPorEstacao;
 
     for (const auto& atribuicao : atribuicoes) {
-        int idCliente = atribuicao.first;
-        int idEstacao = atribuicao.second;
+        int idEstacao = atribuicao.first;
+        int idCliente = atribuicao.second;
         const Cliente* clienteEncontrado = nullptr;
         const EstacaoDrone* estacaoEncontrada = nullptr;
 
@@ -289,4 +289,117 @@ std::unordered_map<int, double> calcularTempoDrones(const Instancia& instancia,
     }
 
     return resultado;
+}
+
+Solucaoo executarHeuristica(
+    const Instancia& instancia,
+    int dronesPorEstacao,
+    double alpha
+) {
+    // 1. Seleciona as estacoes disponiveis.
+    std::vector<int> estacoesSelecionadas =
+        selecionarEstacoes(instancia);
+
+    // 2. Atribui os clientes que podem ser atendidos por drones.
+    std::vector<std::pair<int, int>> atribuicoes =
+        atribuirClientes(instancia, estacoesSelecionadas);
+
+    // 3. Constroi as rotas dos caminhoes.
+    std::vector<RotaCaminhao> rotas =
+        construirRotas(
+            instancia,
+            estacoesSelecionadas,
+            atribuicoes
+        );
+
+    // 4. Calcula o tempo de operacao dos drones por estacao.
+    std::unordered_map<int, double> temposDrones =
+        calcularTempoDrones(
+            instancia,
+            atribuicoes,
+            dronesPorEstacao,
+            alpha
+        );
+
+    // 5. Monta a solucao.
+    Solucaoo solucao{};
+    solucao.rotasCaminhoes = rotas;
+    solucao.atendimentoDrones = atribuicoes;
+    solucao.makespan = 0.0;
+
+    // Converte o ID de um no em sua coordenada.
+    // 0 = deposito, positivo = cliente, negativo = estacao.
+    auto obterPosicao = [&](int idNo) -> Coordenada {
+        if (idNo == 0) {
+            return instancia.deposito.posicao;
+        }
+
+        if (idNo > 0) {
+            for (const Cliente& cliente : instancia.clientes) {
+                if (cliente.idCliente == idNo) {
+                    return cliente.posicao;
+                }
+            }
+        } else {
+            int idEstacao = -idNo;
+
+            for (const EstacaoDrone& estacao : instancia.estacoes) {
+                if (estacao.idEstacao == idEstacao) {
+                    return estacao.posicao;
+                }
+            }
+        }
+
+        throw std::invalid_argument("ID de no inexistente.");
+    };
+
+    // 6. Calcula o makespan considerando caminhoes e drones.
+    for (const RotaCaminhao& rota : solucao.rotasCaminhoes) {
+        // O tempo de retorno do caminhao e um limite para o makespan.
+        solucao.makespan = std::max(
+            solucao.makespan,
+            rota.tempoViagem
+        );
+
+        if (rota.sequenciaNos.empty()) {
+            continue;
+        }
+
+        double tempoAcumulado = 0.0;
+
+        for (std::size_t i = 1;
+             i < rota.sequenciaNos.size();
+             ++i) {
+
+            int noAnterior = rota.sequenciaNos[i - 1];
+            int noAtual = rota.sequenciaNos[i];
+
+            // Tempo acumulado ate a chegada ao no atual.
+            tempoAcumulado += calcularDistancia(
+                obterPosicao(noAnterior),
+                obterPosicao(noAtual)
+            );
+
+            // Nos negativos representam estacoes de drones.
+            if (noAtual < 0) {
+                int idEstacao = -noAtual;
+
+                auto tempoDrone = temposDrones.find(idEstacao);
+
+                if (tempoDrone != temposDrones.end()) {
+                    // As entregas comecam quando o caminhao
+                    // chega e ativa a estacao.
+                    double conclusaoDrones =
+                        tempoAcumulado + tempoDrone->second;
+
+                    solucao.makespan = std::max(
+                        solucao.makespan,
+                        conclusaoDrones
+                    );
+                }
+            }
+        }
+    }
+
+    return solucao;
 }

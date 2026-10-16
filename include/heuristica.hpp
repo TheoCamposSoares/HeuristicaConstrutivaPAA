@@ -16,6 +16,7 @@ std::vector<int> clientesNoAlcance(
 
 std::vector<int> selecionarEstacoes(const Instancia& instancia);
 
+// Cada atribuicao tem o formato <idEstacao, idCliente>.
 std::vector<std::pair<int, int>> atribuirClientes(
     const Instancia& instancia,
     const std::vector<int>& estacoesSelecionadas
@@ -30,6 +31,12 @@ std::vector<RotaCaminhao> construirRotas(
 std::unordered_map<int, double> calcularTempoDrones(
     const Instancia& instancia,
     const std::vector<std::pair<int, int>>& atribuicoes,
+    int dronesPorEstacao,
+    double alpha
+);
+
+Solucaoo executarHeuristica(
+    const Instancia& instancia,
     int dronesPorEstacao,
     double alpha
 );
