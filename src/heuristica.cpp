@@ -291,7 +291,7 @@ std::unordered_map<int, double> calcularTempoDrones(const Instancia& instancia,
     return resultado;
 }
 
-Solucaoo executarHeuristica(
+Solucao executarHeuristica(
     const Instancia& instancia,
     int dronesPorEstacao,
     double alpha
@@ -322,7 +322,7 @@ Solucaoo executarHeuristica(
         );
 
     // 5. Monta a solucao.
-    Solucaoo solucao{};
+    Solucao solucao{};
     solucao.rotasCaminhoes = rotas;
     solucao.atendimentoDrones = atribuicoes;
     solucao.makespan = 0.0;

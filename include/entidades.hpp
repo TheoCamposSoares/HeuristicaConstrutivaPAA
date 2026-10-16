@@ -33,7 +33,7 @@ struct RotaCaminhao {
 };
 
 // Estrutura que armazena a solução completa para o problema
-struct Solucaoo {
+struct Solucao {
     std::vector<RotaCaminhao> rotasCaminhoes;
     std::vector<std::pair<int, int>> atendimentoDrones; // <idEstacao, idCliente>
     double makespan;

@@ -35,7 +35,7 @@ std::unordered_map<int, double> calcularTempoDrones(
     double alpha
 );
 
-Solucaoo executarHeuristica(
+Solucao executarHeuristica(
     const Instancia& instancia,
     int dronesPorEstacao,
     double alpha
