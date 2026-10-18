@@ -6,7 +6,12 @@
 #include <sstream>
 
 bool extrairParametrosDoNome(const std::string& caminhoArquivo, int& qntClientes, int& qntCaminhoes, int& raio) {
-    int extraidos = std::sscanf(caminhoArquivo.c_str(), "%*[^-]-n%d-k%d-r%d.mtspds", &qntClientes, &qntCaminhoes, &raio);
+    const std::size_t separador = caminhoArquivo.find_last_of("/\\");
+    const std::string nomeArquivo =
+        separador == std::string::npos
+            ? caminhoArquivo
+            : caminhoArquivo.substr(separador + 1);
+    int extraidos = std::sscanf(nomeArquivo.c_str(), "%*[^-]-n%d-k%d-r%d.mtspds", &qntClientes, &qntCaminhoes, &raio);
     return (extraidos == 3);
 }
 
