@@ -194,8 +194,8 @@ bool executarUnica() {
 
         std::cout << "\nMakespan: " << solucao.makespan << '\n';
         
-        // Salvamento do experimento em .CSV 
-        std::string arquivoCSV = "resultados/detalhes_execucao.csv";
+        // Salvamento do experimento em .txt
+        std::string arquivoCSV = "resultados/detalhes_execucao.txt";
         salvarResultadoCSV(arquivoCSV, instancia, velocidadeDrone, dronesPorEstacao, solucao, temposDrones);
         std::cout << "\n[Info] Resultados salvos com sucesso em '" << arquivoCSV << "'\n";
 
