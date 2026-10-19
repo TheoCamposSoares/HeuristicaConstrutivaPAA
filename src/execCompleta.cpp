@@ -1,5 +1,4 @@
 #include "../include/execCompleta.hpp"
-
 #include "../include/heuristica.hpp"
 
 #include <algorithm>
@@ -11,6 +10,8 @@
 #include <locale>
 #include <string>
 #include <vector>
+#include <chrono>
+#include <utility>
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -29,6 +30,7 @@ const std::array<const char*, 3> ARQUIVOS_RESULTADO = {{
     "resultado1.csv",
     "resultado2.csv"
 }};
+const char* const ARQUIVO_TEMPO_MEDIO = "tempo_medio.csv";
 
 bool listarInstanciasDiretorio(const std::string& diretorio,
                               std::vector<std::string>& instancias) {
@@ -105,6 +107,37 @@ bool escreverResultados(const std::string& caminho,
     return true;
 }
 
+// Extrai apenas o nome do arquivo (sem diretorios), aceitando "/" e "\".
+std::string nomeBaseArquivo(const std::string& caminho) {
+    const std::size_t posicao = caminho.find_last_of("/\\");
+    return posicao == std::string::npos ? caminho : caminho.substr(posicao + 1);
+}
+
+// Escreve um unico CSV com a media aritmetica (em segundos) do tempo
+// computacional das 9 execucoes de cada instancia.
+bool escreverTemposMedios(
+    const std::string& caminho,
+    const std::vector<std::pair<std::string, double>>& temposMedios) {
+    std::ofstream arquivo(caminho.c_str(), std::ios::out | std::ios::trunc);
+    if (!arquivo.is_open()) {
+        std::cerr << "Erro ao criar o arquivo de tempos: " << caminho << '\n';
+        return false;
+    }
+
+    arquivo.imbue(std::locale::classic());
+    arquivo << "instancia,tempo_medio_s\n";
+    arquivo << std::scientific << std::setprecision(6);
+    for (const std::pair<std::string, double>& linha : temposMedios) {
+        arquivo << linha.first << ',' << linha.second << '\n';
+    }
+
+    if (!arquivo) {
+        std::cerr << "Erro ao gravar o arquivo de tempos: " << caminho << '\n';
+        return false;
+    }
+    return true;
+}
+
 }  // namespace
 
 bool executarCompleta() {
@@ -131,6 +164,8 @@ bool executarCompleta() {
     }
 
     std::array<std::vector<std::array<double, 3>>, 3> resultados;
+    std::vector<std::pair<std::string, double>> temposMedios; 
+
     for (std::size_t i = 0; i < instancias.size(); ++i) {
         Instancia instancia{};
         if (!lerInstancia(instancias[i], instancia)) {
@@ -140,18 +175,21 @@ bool executarCompleta() {
         }
 
         std::array<std::array<double, 3>, 3> resultadosInstancia;
+        double tempoTotalInstancia = 0.0;
+        int execucoesInstancia = 0; 
         try {
             for (std::size_t indiceVelocidade = 0;
                  indiceVelocidade < VELOCIDADES.size();
                  ++indiceVelocidade) {
-                for (int dronesPorEstacao = 1;
-                     dronesPorEstacao <= 3;
-                     ++dronesPorEstacao) {
+                for (int dronesPorEstacao = 1; dronesPorEstacao <= 3; ++dronesPorEstacao) {
+                    const std::chrono::steady_clock::time_point inicio = std::chrono::steady_clock::now();
                     const Solucao solucao = executarHeuristica(
                         instancia, dronesPorEstacao,
                         VELOCIDADES[indiceVelocidade]);
-                    resultadosInstancia[indiceVelocidade]
-                                       [dronesPorEstacao - 1] =
+                    const std::chrono::steady_clock::time_point fim = std::chrono::steady_clock::now();
+                    tempoTotalInstancia += std::chrono::duration<double>(fim - inicio).count();
+                    ++execucoesInstancia;
+                    resultadosInstancia[indiceVelocidade][dronesPorEstacao - 1] =
                         solucao.makespan;
                 }
             }
@@ -160,6 +198,7 @@ bool executarCompleta() {
                       << ": " << erro.what() << '\n';
             return false;
         }
+        temposMedios.push_back(std::make_pair(nomeBaseArquivo(instancias[i]), tempoTotalInstancia / execucoesInstancia));
 
         for (std::size_t indiceVelocidade = 0;
              indiceVelocidade < VELOCIDADES.size();
@@ -180,11 +219,18 @@ bool executarCompleta() {
         }
     }
 
+    const std::string caminhoTempos = std::string("resultados") + separador + ARQUIVO_TEMPO_MEDIO;
+    if (!escreverTemposMedios(caminhoTempos, temposMedios)) {
+        return false;
+    }
+
     std::cout << "Execucao completa concluida: " << instancias.size()
               << " instancias processadas, 9 combinacoes por instancia.\n"
               << "Resultados salvos em resultados" << separador
               << "resultado05.csv, resultados" << separador
               << "resultado1.csv e resultados" << separador
-              << "resultado2.csv.\n";
+              << "resultado2.csv.\n"
+              << "Tempo computacional medio por instancia salvo em resultados"
+              << separador << ARQUIVO_TEMPO_MEDIO << ".\n";
     return true;
 }
