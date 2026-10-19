@@ -1,9 +1,54 @@
 #include "../include/leitorArquivos.hpp"
 
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
+
+namespace {
+
+// Troca "\\" por "/" (o Windows tambem aceita "/", entao o resultado serve
+// para os dois sistemas).
+std::string normalizarSeparadores(std::string caminho) {
+    std::replace(caminho.begin(), caminho.end(), '\\', '/');
+    return caminho;
+}
+
+bool arquivoLegivel(const std::string& caminho) {
+    std::ifstream arquivo(caminho.c_str());
+    // peek() falha em diretorios (o ifstream abre diretorios no Linux)
+    return arquivo.is_open() &&
+           arquivo.peek() != std::ifstream::traits_type::eof();
+}
+
+}  // namespace
+
+bool resolverCaminhoInstancia(const std::string& entrada, std::string& caminhoResolvido) {
+    const std::string caminho = normalizarSeparadores(entrada);
+
+    const std::vector<std::string> candidatos = {
+        caminho,                          // como digitado (absoluto ou relativo)
+        "instancias/" + caminho,          // ex.: clustered/X.mtspds
+        "../instancias/" + caminho        // executando a partir de uma subpasta
+    };
+
+    for (const std::string& candidato : candidatos) {
+        if (arquivoLegivel(candidato)) {
+            caminhoResolvido = candidato;
+            return true;
+        }
+    }
+
+    std::cerr << "Erro ao abrir o arquivo: " << entrada << "\nCaminhos tentados:\n";
+    for (const std::string& candidato : candidatos) {
+        std::cerr << "  - " << candidato << '\n';
+    }
+    return false;
+}
 
 bool extrairParametrosDoNome(const std::string& caminhoArquivo, int& qntClientes, int& qntCaminhoes, int& raio) {
     const std::size_t separador = caminhoArquivo.find_last_of("/\\");
@@ -26,8 +71,8 @@ bool extrairConteudo(std::ifstream& arquivo, Instancia& instancia, int qntClient
     while (std::getline(arquivo, linha)) {
         if (linha.empty()) continue;
         
-        char primeiroCarac = linha[0];
-        if (!isdigit(primeiroCarac)) continue;
+        const unsigned char primeiroCarac = static_cast<unsigned char>(linha[0]);
+        if (!std::isdigit(primeiroCarac)) continue;
 
         std::stringstream ss(linha);
 
@@ -62,16 +107,26 @@ bool lerInstancia(const std::string& caminhoArquivo, Instancia& instancia) {
     instancia.clientes.clear();
     instancia.estacoes.clear();
 
-    // 1. Abre o arquivo
-    std::ifstream arquivo(caminhoArquivo);
+    instancia.clientes.clear();
+    instancia.estacoes.clear();
+
+    // 1. Resolve o caminho (aceita "clustered\\X.mtspds", "scattered/X.mtspds",
+    //    caminhos completos, etc.) e abre o arquivo
+    std::string caminhoReal;
+    if (!resolverCaminhoInstancia(caminhoArquivo, caminhoReal)) {
+        return false;
+    }
+    instancia.nomeArquivo = caminhoReal;
+
+    std::ifstream arquivo(caminhoReal.c_str());
     if (!arquivo.is_open()) {
-        std::cerr << "Erro ao abrir o arquivo: " << caminhoArquivo << std::endl;
+        std::cerr << "Erro ao abrir o arquivo: " << caminhoReal << std::endl;
         return false;
     }
 
     // 2. Extrai as informações do nome do arquivo
     int qntClientes = 0, qntCaminhoes = 0, raio = 0;
-    if (!extrairParametrosDoNome(caminhoArquivo, qntClientes, qntCaminhoes, raio)) {
+    if (!extrairParametrosDoNome(caminhoReal, qntClientes, qntCaminhoes, raio)) {
         std::cerr << "\nErro: O padrão ou a extensão do nome do arquivo não coincidem!" << std::endl;
         arquivo.close();
         return false;
@@ -89,7 +144,7 @@ bool lerInstancia(const std::string& caminhoArquivo, Instancia& instancia) {
 
     // 5. Validação final
     if (instancia.clientes.empty() || instancia.estacoes.empty()) {
-        std::cerr << "Erro: Não foi possível ler os dados da instância " << caminhoArquivo << std::endl;
+        std::cerr << "Erro: Não foi possível ler os dados da instância " << caminhoReal << std::endl;
         return false;
     }
 

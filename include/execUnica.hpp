@@ -4,9 +4,8 @@
 #include <string>
 #include <vector>
 
-bool lerOpcaoInteira(const std::string& pergunta,
-                     const std::vector<int>& opcoes,
-                     int& escolha);
+bool lerOpcaoInteira(const std::string& pergunta, const std::vector<int>& opcoes, 
+                    int& escolha);
 
 bool executarUnica();
 

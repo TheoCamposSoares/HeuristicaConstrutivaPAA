@@ -87,8 +87,8 @@ bool lerOpcaoInteira(const std::string& pergunta,
 bool executarUnica() {
     std::string caminhoArquivo;
     do {
-        std::cout << "Caminho do arquivo da instancia "
-                     "(absoluto ou relativo ao diretorio de execucao): ";
+        std::cout << "Arquivo da instancia (ex.: clustered\\B-n34-k5-r8.mtspds "
+                     "ou scattered/A-n36-k5-r12.mtspds): ";
         std::string entrada;
         if (!std::getline(std::cin, entrada)) {
             return false;
