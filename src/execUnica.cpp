@@ -1,6 +1,6 @@
 #include "../include/execUnica.hpp"
-
 #include "../include/heuristica.hpp"
+#include "../include/salvarExecUnica.hpp"
 
 #include <iomanip>
 #include <iostream>
@@ -193,6 +193,12 @@ bool executarUnica() {
         }
 
         std::cout << "\nMakespan: " << solucao.makespan << '\n';
+        
+        // Salvamento do experimento em .CSV 
+        std::string arquivoCSV = "resultados/detalhes_execucao.csv";
+        salvarResultadoCSV(arquivoCSV, instancia, velocidadeDrone, dronesPorEstacao, solucao, temposDrones);
+        std::cout << "\n[Info] Resultados salvos com sucesso em '" << arquivoCSV << "'\n";
+
     } catch (const std::exception& erro) {
         std::cerr << "Erro ao executar a heuristica: " << erro.what() << '\n';
         return false;
