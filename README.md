@@ -74,11 +74,3 @@ Em seguida, são exibidos os dados da instância, as atribuições dos drones, a
 |---|---|
 | `resultado05.csv`, `resultado1.csv`, `resultado2.csv` | *Makespan* de cada instância para 1, 2 e 3 drones, um arquivo por velocidade |
 | `tempo_medio.csv` | Média aritmética, em segundos, do tempo computacional das 9 execuções de cada instância |
-
-### Bateria de Testes
-Após a execução dos testes, os resultados consolidados em formato .csv estarão disponíveis no diretório resultados/: 
-- resultado05.csv, resultado1.csv, resultado2.csv: Contêm os valores de makespan calculados por instância.   
-- tempo_medio.csv: Contém os tempos médios de execução ($t$), em segundos, obtidos pelo algoritmo. 
-
-### Testes Unitários
-Após a execução, o resultado do teste será apresentado no terminal, imprimindo as informações da instância, os clientes ao alcance de cada estação, os atributos dos drones, o tempo de atendimento por estação aérea, as rotas dos caminhões e o makespan. As mesmas informações são salvas no arquivo resultados/detalhes_execucao.txt. No caso de mais de um teste, os resultados são salvos nesse mesmo arquivo, um abaixo do outro.
