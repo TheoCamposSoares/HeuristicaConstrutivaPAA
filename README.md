@@ -20,6 +20,7 @@ mTSP-DS/
 │   └── scattered/             # Instâncias com topologia espacial dispersa
 │
 ├── resultados/                # Relatórios e métricas de saída gerados
+│   ├── detalhes_execucao.txt  # Resultados para as execuções únicas do usuário
 │   ├── resultado05.csv        # Resultados para o fator de velocidade alpha = 0.5
 │   ├── resultado1.csv         # Resultados para o fator de velocidade alpha = 1.0
 │   ├── resultado2.csv         # Resultados para o fator de velocidade alpha = 2.0
